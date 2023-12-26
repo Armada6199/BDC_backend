@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+module.export=`<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -361,3 +361,4 @@ table tr td {
     </section>
   </body>
 </html>
+`
