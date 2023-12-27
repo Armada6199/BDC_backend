@@ -13,7 +13,7 @@ const publicDirectory = path.join(__dirname, '../public');
 const viewsPath = path.join(__dirname, './views');
 app.set('views', viewsPath);
 app.set('view engine', 'handlebars');
-app.use(express.static(publicDirectory));
+app.use("/images", express.static(path.join(__dirname, "/public/images")));
 app.use(express.urlencoded({ extended: true }));
 app.use(
   cors({
@@ -23,10 +23,9 @@ app.use(
 
 app.use(express.json());
 app.get("/", (req, res) => {
-  res.render("index");
 });
 
-app.use("/loan", loanRouter);
+app.use("/", loanRouter);
 const runServer = (PORT) => {
   app.listen(PORT, () => {
     console.log("Server Running on port " + PORT);

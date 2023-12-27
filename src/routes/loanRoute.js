@@ -2,30 +2,73 @@ const router = require("express").Router();
 const puppeteer = require("puppeteer");
 const fs = require("fs");
 const path = require("path");
-router.post("/", handleGetLoanTemplate);
+var Handlebars = require("handlebars");
+const sourcePath = path.join(__dirname, "..", "views", "index.handlebars");
+router.post("/loan", handleGetLoanTemplate);
+router.post("/signature", handleAddSignature);
 function handleGetLoanTemplate(req, res, next) {
-  const html = fs.readFileSync(
-    path.join(__dirname, "..", "/views", "index.handlebars"),
-    "utf-8"
-  );
-  async function generatePDFfromHTML(htmlContent, outputPath) {
-    const browser = await puppeteer.launch();
-    const page = await browser.newPage();
-    await page.setContent(htmlContent);
-    const pdfBuffer = await page.pdf({ path: outputPath, format: "A4" });
-    await browser.close();
-    return pdfBuffer;
-  }
+  const currentLoan = req.body;
   try {
-    generatePDFfromHTML(html, "loanAgreemnt.pdf")
+    const source = fs.readFileSync(sourcePath, "utf8");
+    let template = Handlebars.compile(source);
+    const result = template(currentLoan);
+    generatePDFfromHTML(result, "loanAgreemnt.pdf")
       .then((pdfBuffer) => {
         const base64Data = pdfBuffer.toString("base64");
-        console.log(base64Data);
         res.send(base64Data);
       })
       .catch((err) => console.error("Error generating PDF:", err));
-  } catch (err) {
-    // do something on error
+  } catch (error) {
+    next(error);
+  }
+}
+async function generatePDFfromHTML(htmlContent, outputPath) {
+  try {
+    const browser = await puppeteer.launch({ headless: true });
+    const page = await browser.newPage();
+    // await page.setViewport({
+    //     width: 800,
+    //     height: 600,
+    //     deviceScaleFactor: 2,
+    //   });
+    //   await page.emulateMedia('screen');
+    // await page.goto(sourcePath, { waitUntil: 'networkidle0' });
+    // console.log(htmlContent)
+    await page.setContent(htmlContent, {
+      waitUntil: ["load", "networkidle0", "domcontentloaded"],
+    });
+    await page.waitForSelector(".signatureImg");
+    const pdfBuffer = await page.pdf({
+      format: "A3",
+      printBackground: true,
+      outputPath: outputPath,
+      margin: { top: "1cm", right: "1cm", left: "1cm" },
+    });
+    await browser.close();
+    return pdfBuffer;
+  } catch (error) {
+    throw new Error(error);
+  }
+}
+
+async function handleAddSignature(req, res, next) {
+  let currentLoan = req.body;
+  try {
+    const source = fs.readFileSync(sourcePath, "utf8");
+    let template = Handlebars.compile(source);
+    const result = template(currentLoan);
+    // console.log(currentLoan.signatureBase64.s)
+    //    currentLoan={ ...currentLoan,signatureBase64:currentLoan.signatureBase64.slice(22)};
+    console.log(currentLoan.signatureBase64);
+    generatePDFfromHTML(result, "loanAgreemnt.pdf")
+      .then((pdfBuffer) => {
+        // console.log(pdfBuffer)
+        const base64Data = pdfBuffer.toString("base64");
+        res.send(base64Data);
+      })
+      .catch((err) => console.error("Error generating PDF:", err));
+  } catch (error) {
+    console.log(error);
   }
 }
 

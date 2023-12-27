@@ -57,12 +57,16 @@ table tr td {
     border: 1px solid lightgray;
     
 }
+img{
+  width: 300px;
+  height: 100px; 
+}
 </style>
   <body>
     <section class="main_container">
       <div class="inner_container">
         <div>
-          <h1 style="text-align: center">Personal Loan Agreement</h1>
+          <h1 style="text-align: center">{{title}} Agreement</h1>
         </div>
         <div>
           <p>
@@ -70,7 +74,7 @@ table tr td {
             <bold>effective on 1 December 2023</bold>
           </p>
           <h4>Between</h4>
-          <p>{{currentLoan.employeeName}}</p>
+          <p>{{formData.employeeName}}</p>
           <h4>And</h4>
           <p>BDC BANK</p>
         </div>
@@ -357,6 +361,10 @@ table tr td {
             </tr>
           </tbody>
         </table>
+        <div>
+          <h1>Signature</h1>
+          <img src="{{signatureBase64}}" class="signatureImg" alt="not found"/>
+        </div>
       </div>
     </section>
   </body>
