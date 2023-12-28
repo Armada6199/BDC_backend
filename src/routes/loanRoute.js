@@ -2,10 +2,12 @@ const router = require("express").Router();
 const puppeteer = require("puppeteer");
 const fs = require("fs");
 const path = require("path");
+var stream = require('stream');
 var Handlebars = require("handlebars");
 const sourcePath = path.join(__dirname, "..", "views", "index.handlebars");
 router.post("/loan", handleGetLoanTemplate);
 router.post("/signature", handleAddSignature);
+router.post('/docuDownload',handleDownloadDocument)
 function handleGetLoanTemplate(req, res, next) {
   const currentLoan = req.body;
   try {
@@ -24,7 +26,7 @@ function handleGetLoanTemplate(req, res, next) {
 }
 async function generatePDFfromHTML(htmlContent, outputPath) {
   try {
-    const browser = await puppeteer.launch({ headless: true });
+    const browser = await puppeteer.launch({ defaultViewPort:false });
     const page = await browser.newPage();
     // await page.setViewport({
     //     width: 800,
@@ -37,12 +39,12 @@ async function generatePDFfromHTML(htmlContent, outputPath) {
     await page.setContent(htmlContent, {
       waitUntil: ["load", "networkidle0", "domcontentloaded"],
     });
-    await page.waitForSelector(".signatureImg");
+    // await page.waitForSelector(".signatureImg");
     const pdfBuffer = await page.pdf({
       format: "A3",
       printBackground: true,
       outputPath: outputPath,
-      margin: { top: "1cm", right: "1cm", left: "1cm" },
+      margin: { top: "1cm", right: "1cm",bottom:'1cm', left: "1cm" },
     });
     await browser.close();
     return pdfBuffer;
@@ -69,6 +71,27 @@ async function handleAddSignature(req, res, next) {
       .catch((err) => console.error("Error generating PDF:", err));
   } catch (error) {
     console.log(error);
+  }
+}
+async function handleDownloadDocument(req,res,next){
+  const currentLoan=req.body;
+  console.log('here')
+  try {
+    const source = fs.readFileSync(sourcePath, "utf8");
+    let template = Handlebars.compile(source);
+    const result = template(currentLoan);
+    generatePDFfromHTML(result, "loanAgreemnt.pdf")
+    .then((pdfBuffer) => {
+      // console.log(pdfBuffer);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', 'attachment; filename="downloaded.pdf"');
+      res.send(pdfBuffer);
+      // const base64Data = pdfBuffer.toString("base64");
+      // res.download(fileName,base64Data);
+    })
+    .catch((err) => console.error("Error generating PDF:", err));
+  } catch (error) {
+    console.log(error)
   }
 }
 
